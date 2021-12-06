@@ -1,18 +1,31 @@
-import httpx
-import trio
+import sys
+import time
 from pathlib import Path
 from functools import partial
+
+import httpx
+import trio
+
+from dirgh import __version__
+headers = {'user-agent': f'dirgh/{__version__}'}
+
+default_download = f'dirgh/{int(time.time())}'
 
 
 async def api(endpoint, token=None):
     async with httpx.AsyncClient() as client:
-        headers = {'user-agent': 'dirgh/0.0.1'}
+        client: httpx.AsyncClient = client
+
         if token is not None:
             headers["Authorization"] = f'token {token}'
         req_string = f'https://api.github.com/repos/{endpoint}'
 
         response = await client.get(req_string, headers=headers)
-
+        if response.is_error:
+            sys.tracebacklimit = 0
+            raise httpx.RequestError(f"Request returned an error! Check if your token is correct and\n the repo and "
+                                     f"the directory exist. Requested from:\n {req_string}\nReturned status "
+                                     f"{response.status_code}:\n{response.text}")
         return response.json()
 
 
@@ -26,8 +39,8 @@ async def get_contents(user, repository, directory, ref, token, do_print=False):
 
 async def download(url, path: str, root_dir=None, target=None, token=None):
     if root_dir is None:
-        root_dir = 'download'
-    root_dir.replace('\\', '/').removesuffix('/')
+        root_dir = default_download
+    root_dir = root_dir.replace('\\', '/').removesuffix('/')
 
     if target is None:
         target = f"./{root_dir}"
@@ -41,7 +54,6 @@ async def download(url, path: str, root_dir=None, target=None, token=None):
     parent_path.mkdir(parents=True, exist_ok=True)
 
     async with httpx.AsyncClient() as client:
-        headers = {'user-agent': 'dirgh/0.1.0'}
         if token is not None:
             headers["Authorization"] = f'token {token}'
         with open(download_path, 'xb') as f:
@@ -96,5 +108,5 @@ async def find_download(owner, repository, directory=None, target=None, ref='HEA
         root_dir = directory
     directory = directory.replace('\\', '/').removeprefix('/').removesuffix('/')
     contents = await via_contents(owner, repository, directory, ref=ref, recursive=recursive, token=token)
-    print(f"Found {len(contents)} files, starting download...")
+    print(f"Found {len(contents)} files.")
     await download_contents(contents, root_dir=root_dir, target=target, token=token)

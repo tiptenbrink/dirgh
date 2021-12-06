@@ -4,19 +4,24 @@ import functools
 import trio
 
 import dirgh
+from dirgh.download import default_download
 
 
 def run():
     cli_name = 'dirgh'
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                                      description="Download single directories from GitHub.\n"
-                                                 "GitHub rate limits are 60 requests/hour when unauthenticated and\n"
-                                                 "5,000/hour when using a token. Each subfolder incurs requires \n"
-                                                 "extra requests."
+                                                 "GitHub rate limits are 60 requests/hour when unauthenticated and "
+                                                 "5,000/hour\n when using a token. Each subfolder  requires extra "
+                                                 "requests."
                                                  "\n\n"
                                                  "examples:\n"
-                                                 f"{cli_name} -r tiptenbrink/tiauth -d deployment -rf "
-                                                 f"cf51bff1a79b280388ba65f18998717b2fa5e1e3\n")
+                                                 f"{cli_name} -r tiauth -o tiptenbrink -d deployment --ref "
+                                                 f"cf51bff1a79b280388ba65f18998717b2fa5e1e3\n"
+                                                 f"dirgh -r tiptenbrink/tiauth -d deployment -R -t 'C:\\Users\\dirgher"
+                                                 f"\\Cool projects/dürghé'\n(You can use both forward and backward"
+                                                 f"slashes, even interchangeably)\n"
+                                                 f"dirgh -r tiptenbrink/tiauth -R -t './dürghé'")
 
     repo_nm = 'repo'
     repo_help = "repository on GitHub using the format <owner>/<repository> or just \n" \
@@ -32,18 +37,23 @@ def run():
     dir_help = "initial directory path in the format <subfolder1>/<subfolder2> etc. Defaults to root directory."
     parser.add_argument('-d', f'--{dir_nm}', help=dir_help, default=None, required=False)
 
+    target_nm = 'target'
+    target_help = f"output directory. If requesting a directory, this will overwrite the directory name. By default, " \
+                  f"the content will be placed in './{default_download}'."
+    parser.add_argument('-t', f'--{target_nm}', help=target_help, default=None, required=False)
+
     ref_nm = 'ref'
     ref_default = 'HEAD'
     ref_help = f"commit reference, can be in any branch. (default: {ref_default})"
-    parser.add_argument('-rf', f'--{ref_nm}', help=ref_help, default=ref_default, required=False)
+    parser.add_argument(f'--{ref_nm}', help=ref_help, default=ref_default, required=False)
 
     recursive_nm = 'recursive'
     recursive_help = "recursively enter all subfolders to get all files."
     parser.add_argument('-R', f'--{recursive_nm}', help=recursive_help, default=False, required=False,
                         action='store_true')
-    token_nm = 'token'
+    token_nm = 'auth'
     token_help = f"user authentication token, OAuth or personal access token. Not required but increases rate limits."
-    parser.add_argument('-t', f'--{token_nm}', help=token_help, default=None, required=False)
+    parser.add_argument('-a', f'--{token_nm}', help=token_help, default=None, required=False)
 
     config = vars(parser.parse_args())
 
@@ -57,6 +67,6 @@ def run():
         owner = config[owner_nm]
         repo = config[repo_nm]
 
-    find_download = functools.partial(dirgh.find_download, owner, repo, config[dir_nm], ref=config[ref_nm],
-                                      recursive=config[recursive_nm], token=config[token_nm])
+    find_download = functools.partial(dirgh.find_download, owner, repo, config[dir_nm], target=config[target_nm],
+                                      ref=config[ref_nm], recursive=config[recursive_nm], token=config[token_nm])
     trio.run(find_download)
