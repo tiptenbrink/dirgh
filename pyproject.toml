@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dirgh"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["tiptenbrink <75669206+tiptenbrink@users.noreply.github.com>"]
 

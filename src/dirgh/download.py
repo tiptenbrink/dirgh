@@ -1,3 +1,4 @@
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -37,14 +38,7 @@ async def get_contents(user, repository, directory, ref, token, do_print=False):
     return await api(endpoint, token)
 
 
-async def download(url, path: str, root_dir=None, target=None, token=None):
-    if root_dir is None:
-        root_dir = default_download
-    root_dir = root_dir.replace('\\', '/').removesuffix('/')
-
-    if target is None:
-        target = f"./{root_dir}"
-    target = target.replace('\\', '/').removesuffix('/')
+async def download(url, path: str, root_dir: str, target: Path, token=None):
     target_path = Path(target)
 
     if len(target_path.parents) > 0:
@@ -61,7 +55,19 @@ async def download(url, path: str, root_dir=None, target=None, token=None):
             f.write(response.read())
 
 
-async def download_contents(contents, root_dir=None, target=None, token=None):
+async def download_contents(contents, root_dir=None, target=None, overwrite=False, token=None):
+    if root_dir is None:
+        root_dir = default_download
+    root_dir = root_dir.replace('\\', '/').removesuffix('/')
+
+    if target is None:
+        target = f"./{root_dir}"
+    target = target.replace('\\', '/').removesuffix('/')
+    target = Path(target)
+
+    if overwrite and target.exists():
+        shutil.rmtree(target)
+
     async with trio.open_nursery() as nursery:
         for cont in contents:
             download_fn = partial(download, cont['down'], cont['path'], root_dir=root_dir, target=target, token=token)
@@ -100,7 +106,8 @@ async def via_contents(user, repository, directory, ref="HEAD", token=None, recu
     return final_results
 
 
-async def find_download(owner, repository, directory=None, target=None, ref='HEAD', recursive=True, token=None):
+async def find_download(owner, repository, directory=None, target=None, ref='HEAD', recursive=True, token=None,
+                        overwrite=False):
     if directory is None:
         directory = ''
         root_dir = None
@@ -109,4 +116,4 @@ async def find_download(owner, repository, directory=None, target=None, ref='HEA
     directory = directory.replace('\\', '/').removeprefix('/').removesuffix('/')
     contents = await via_contents(owner, repository, directory, ref=ref, recursive=recursive, token=token)
     print(f"Found {len(contents)} files.")
-    await download_contents(contents, root_dir=root_dir, target=target, token=token)
+    await download_contents(contents, root_dir=root_dir, target=target, token=token, overwrite=overwrite)
