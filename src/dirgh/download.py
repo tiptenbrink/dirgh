@@ -3,7 +3,7 @@ import sys
 import time
 from pathlib import Path
 from functools import partial
-
+import logging
 import httpx
 import trio
 
@@ -11,6 +11,8 @@ from dirgh import __version__
 headers = {'user-agent': f'dirgh/{__version__}'}
 
 default_download = f'dirgh/{int(time.time())}'
+
+logger = logging.getLogger(__name__)
 
 
 async def api(endpoint, token=None):
@@ -30,10 +32,9 @@ async def api(endpoint, token=None):
         return response.json()
 
 
-async def get_contents(user, repository, directory, ref, token, do_print=False):
+async def get_contents(user, repository, directory, ref, token):
     endpoint = f'{user}/{repository}/contents/{directory}?ref={ref}'
-    if do_print:
-        print(f"Requesting API contents from {endpoint}")
+    logger.debug(f"Requesting API contents from {endpoint}")
 
     return await api(endpoint, token)
 
@@ -72,7 +73,7 @@ async def download_contents(contents, root_dir=None, target=None, overwrite=Fals
         for cont in contents:
             download_fn = partial(download, cont['down'], cont['path'], root_dir=root_dir, target=target, token=token)
             nursery.start_soon(download_fn)
-    print("Download successful!")
+    logger.info("Download successful!")
 
 
 async def via_contents_prod(send_channel, user, repository, directory, jsn_list=None, ref="HEAD", token=None, recursive=True):
@@ -95,7 +96,7 @@ async def via_contents(user, repository, directory, ref="HEAD", token=None, recu
     async with trio.open_nursery() as nursery:
         send_channel, receive_channel = trio.open_memory_channel(0)
         async with send_channel:
-            jsn_list = await get_contents(user, repository, directory, ref, token, do_print=True)
+            jsn_list = await get_contents(user, repository, directory, ref, token)
             via_content = partial(via_contents_prod, send_channel.clone(), user, repository, directory,
                                   jsn_list=jsn_list, ref=ref, token=token, recursive=recursive)
             nursery.start_soon(via_content)
@@ -115,5 +116,5 @@ async def find_download(owner, repository, directory=None, target=None, ref='HEA
         root_dir = directory
     directory = directory.replace('\\', '/').removeprefix('/').removesuffix('/')
     contents = await via_contents(owner, repository, directory, ref=ref, recursive=recursive, token=token)
-    print(f"Found {len(contents)} files.")
+    logger.info(f"Found {len(contents)} files.")
     await download_contents(contents, root_dir=root_dir, target=target, token=token, overwrite=overwrite)
