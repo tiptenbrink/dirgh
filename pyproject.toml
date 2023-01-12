@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "dirgh"
-version = "0.1.4"
-description = ""
+version = "0.1.5"
+description = "With dirgh you can easily download a directory from GitHub programmatically from Python or using the CLI."
 authors = ["tiptenbrink <75669206+tiptenbrink@users.noreply.github.com>"]
 
 [tool.poetry.dependencies]
