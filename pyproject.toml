@@ -8,8 +8,8 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-httpx = "^0.23.0"
-trio = ">= 0.20.0, < 0.22.0"
+httpx = ">=0.23.0, < 0.24.0"
+trio = ">= 0.20.0, < 0.23.0"
 
 [tool.poetry.dev-dependencies]
 
