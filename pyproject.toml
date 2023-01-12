@@ -1,8 +1,10 @@
 [tool.poetry]
 name = "dirgh"
-version = "0.1.5"
+version = "0.2.0"
 description = "With dirgh you can easily download a directory from GitHub programmatically from Python or using the CLI."
 authors = ["tiptenbrink <75669206+tiptenbrink@users.noreply.github.com>"]
+readme = "README.md"
+license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "^3.9"

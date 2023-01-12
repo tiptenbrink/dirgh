@@ -1,5 +1,4 @@
 import argparse
-import functools
 
 import trio
 
@@ -39,8 +38,8 @@ def run():
     parser.add_argument('-d', f'--{dir_nm}', help=dir_help, default=None, required=False)
 
     target_nm = 'target'
-    target_help = f"output directory. If requesting a directory, this will overwrite the directory name. By default, " \
-                  f"the content will be placed in './{default_download}'."
+    target_help = f"output directory. If requesting a directory, this will overwrite the directory name of the " \
+                  f"requested one. By default, the content will be placed in './{default_download}'."
     parser.add_argument('-t', f'--{target_nm}', help=target_help, default=None, required=False)
 
     ref_nm = 'ref'
@@ -74,7 +73,8 @@ def run():
         owner = config[owner_nm]
         repo = config[repo_nm]
 
-    find_download = functools.partial(dirgh.find_download, owner, repo, config[dir_nm], target=config[target_nm],
-                                      ref=config[ref_nm], recursive=config[recursive_nm], overwite=config[overwrite_nm],
+
+    find_download = lambda: dirgh.find_download(owner, repo, config[dir_nm], target=config[target_nm],
+                                      ref=config[ref_nm], recursive=config[recursive_nm], overwrite=config[overwrite_nm],
                                       token=config[token_nm])
     trio.run(find_download)

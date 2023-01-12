@@ -40,6 +40,9 @@ async def get_contents(user, repository, directory, ref, token):
 
 
 async def download(url, path: str, root_dir: str, target: Path, token=None):
+    """
+    path is the path relative
+    """
     target_path = Path(target)
 
     if len(target_path.parents) > 0:
@@ -57,10 +60,12 @@ async def download(url, path: str, root_dir: str, target: Path, token=None):
 
 
 async def download_contents(contents, root_dir=None, target=None, overwrite=False, token=None):
+    # Only if downloading the main repository
     if root_dir is None:
         root_dir = default_download
     root_dir = root_dir.replace('\\', '/').removesuffix('/')
 
+    # Defaults to root_dir relative to current directory
     if target is None:
         target = f"./{root_dir}"
     target = target.replace('\\', '/').removesuffix('/')
@@ -71,7 +76,7 @@ async def download_contents(contents, root_dir=None, target=None, overwrite=Fals
 
     async with trio.open_nursery() as nursery:
         for cont in contents:
-            download_fn = partial(download, cont['down'], cont['path'], root_dir=root_dir, target=target, token=token)
+            download_fn = lambda: download(cont['down'], cont['path'], root_dir=root_dir, target=target, token=token)
             nursery.start_soon(download_fn)
     logger.info("Download successful!")
 
@@ -109,12 +114,16 @@ async def via_contents(user, repository, directory, ref="HEAD", token=None, recu
 
 async def find_download(owner, repository, directory=None, target=None, ref='HEAD', recursive=True, token=None,
                         overwrite=False):
+    """Downloads the specified directory from <owner>/<repository> on GitHub. If no directory is specified, it downloads
+    all the files in the main repository. """
     if directory is None:
         directory = ''
         root_dir = None
     else:
         root_dir = directory
     directory = directory.replace('\\', '/').removeprefix('/').removesuffix('/')
+    # First all content to be downloaded is determined
     contents = await via_contents(owner, repository, directory, ref=ref, recursive=recursive, token=token)
     logger.info(f"Found {len(contents)} files.")
+    # Finally all these files are actually downloaded
     await download_contents(contents, root_dir=root_dir, target=target, token=token, overwrite=overwrite)
