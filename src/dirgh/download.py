@@ -1,3 +1,4 @@
+import functools
 import shutil
 import sys
 import time
@@ -127,3 +128,8 @@ async def find_download(owner, repository, directory=None, target=None, ref='HEA
     logger.info(f"Found {len(contents)} files.")
     # Finally all these files are actually downloaded
     await download_contents(contents, root_dir=root_dir, target=target, token=token, overwrite=overwrite)
+
+
+def run_sync(async_fn):
+    """Expose async runtime so that it does not have to be explicitly depended on for running from sync."""
+    trio.run(async_fn)
