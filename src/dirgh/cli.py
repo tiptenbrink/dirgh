@@ -44,7 +44,7 @@ def run():
 
     ref_nm = 'ref'
     ref_default = 'HEAD'
-    ref_help = f"commit reference, can be in any branch. (default: {ref_default})"
+    ref_help = f"any valid ref, can be in any branch. (default: {ref_default})"
     parser.add_argument(f'--{ref_nm}', help=ref_help, default=ref_default, required=False)
 
     recursive_nm = 'recursive'
